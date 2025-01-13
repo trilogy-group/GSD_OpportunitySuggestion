@@ -1,0 +1,9 @@
+langchain
+langchain-anthropic
+langchain-community
+langchain-core
+langchain-openai
+openai
+anthropic
+requests
+flask

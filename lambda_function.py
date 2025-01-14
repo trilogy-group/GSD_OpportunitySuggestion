@@ -40,15 +40,37 @@ def lambda_handler(event, context) -> dict:
     raw_opportunities = salesforce_service.get_opportunities_assigned_to_users(salesforce_access_token, user_ids, account_id, format = True)
     opportunities = []
     
+    # Get opportunity products for each opportunity
+    opportunity_products_map = {}
+    for op in opportunity_products:
+        opp_id = op['opportunity_id']
+        if opp_id not in opportunity_products_map:
+            opportunity_products_map[opp_id] = []
+        opportunity_products_map[opp_id].append(op)
+    
     for opportunity in raw_opportunities:
-        opportunity_rank = ai_service.rank_opportunity_score(user_products, transcript)
+        opp_products = opportunity_products_map.get(opportunity.get('Id'), [])
+        
+        # Add debug logging
+        logger.debug(f"Processing opportunity: {opportunity}")
+        logger.debug(f"Found {len(opp_products)} products for opportunity")
+        
+        opportunity_rank = ai_service.rank_opportunity_score(
+            opportunity,
+            opp_products,
+            transcript
+        )
         opportunity_to_be_added = {
             'id': opportunity.get('Id'),
             'name': opportunity.get('Name'),
             'stage_name': opportunity.get('StageName'),
-            'rank': opportunity_rank
+            'rank': opportunity_rank,
+            'product_count': len(opp_products)  # Add this for debugging
         }
         opportunities.append(opportunity_to_be_added)
+
+    # Sort opportunities by rank in descending order
+    opportunities.sort(key=lambda x: x['rank'], reverse=True)
 
     dummy_response = {
         'result': opportunities,

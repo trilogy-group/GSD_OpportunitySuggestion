@@ -7,6 +7,20 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
+def get_products_from_csv(product_ids):
+    products = []
+    csv_path = os.path.join(os.path.dirname(__file__), 'data', 'products.csv')
+    with open(csv_path, 'r') as file:
+        csv_reader = csv.DictReader(file)
+        for row in csv_reader:
+            if row['Id'] in product_ids:
+                products.append({
+                    'id': row['Id'],
+                    'name': row['Name']
+                })
+    return products
+
+
 def get_users_from_csv():
     """Get list of users from users.csv"""
     users = []

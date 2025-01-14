@@ -105,7 +105,7 @@ def introspect_token(access_token: str) -> Dict:
         raise
 
 
-def _perform_query(access_token, query):
+def _perform_query(access_token, query, format = False):
     url = urljoin(AUTH_FIELDS["url_domain"], f"services/data/v62.0/query")
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -123,10 +123,13 @@ def _perform_query(access_token, query):
     
     response_json = response.json()
     
+    if format:
+        return response_json.get('records') if response_json.get('records') else []
+    
     return response_json
 
 
-def get_opportunity_products(access_token, user_ids, account_id, product_ids = []):   
+def get_opportunity_products(access_token, user_ids, account_id, product_ids = [], format = False):   
     product_filter = ""
     if product_ids:
         quoted_ids = [f"'{id}'" for id in product_ids]
@@ -138,17 +141,17 @@ def get_opportunity_products(access_token, user_ids, account_id, product_ids = [
         users_filter = f" AND Opportunity.OwnerId IN ({','.join(quoted_ids)}) "
     
     new_query = f"""
-    SELECT OpportunityId, Product2Id, Product2.Name, Quantity
+    SELECT Id, OpportunityId, Product2Id, Product2.Name, Quantity
     FROM OpportunityLineItem
     WHERE Opportunity.AccountId = '{account_id}'{users_filter}{product_filter}
     ORDER BY Opportunity.CreatedDate DESC
     """
-    opportunity_products = _perform_query(access_token, new_query)
+    opportunity_products = _perform_query(access_token, new_query, format)
     
     return opportunity_products
 
 
-def get_opportunities_assigned_to_users(access_token, user_ids, account_id, product_ids = []):
+def get_opportunities_assigned_to_users(access_token, user_ids, account_id, product_ids = [], format = False):
     users_filter = ""
     if user_ids:
         # Add single quotes around each ID and join them with commas
@@ -157,7 +160,7 @@ def get_opportunities_assigned_to_users(access_token, user_ids, account_id, prod
     
     opportunity_query = f"SELECT Id, Name, StageName, AccountId, Account.Name, CreatedDate FROM Opportunity WHERE AccountId = '{account_id}'{users_filter} ORDER BY CreatedDate DESC"
        
-    opportunities = _perform_query(access_token, opportunity_query)
+    opportunities = _perform_query(access_token, opportunity_query, format)
     
     # opportunity_products = []
     # opportunity_products = get_opportunity_products(access_token, user_ids, account_id, product_ids)

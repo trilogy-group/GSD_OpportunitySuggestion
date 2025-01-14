@@ -7,3 +7,5 @@ openai
 anthropic
 requests
 flask
+python-dotenv
+crewai[tools]

@@ -1,3 +1,4 @@
+import json
 import requests
 import logging
 from urllib.parse import urljoin
@@ -105,19 +106,56 @@ def introspect_token(access_token: str) -> Dict:
         raise
 
 
-def get_opportunities_assigned_to_user(access_token, user_id, account_id):
-    url = urljoin(AUTH_FIELDS["url_domain"], "services/data/v60.0/query")
-    
-    query = f"SELECT Id, Name, StageName, AccountId, Account.Name, CreatedDate FROM Opportunity WHERE OwnerId = '{user_id}' AND AccountId = '{account_id}' ORDER BY CreatedDate DESC"
-   
-    logger.debug(f"Query: {query}")
-    
+def _perform_query(access_token, query):
+    url = urljoin(AUTH_FIELDS["url_domain"], f"services/data/v62.0/query")
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json'
     }
     
-    response = requests.get(url, headers=headers, params={'q': query})
-    response.raise_for_status()
+    logger.debug(f"URL: {url}")
+    logger.debug(f"Query: {query}")
     
-    return response.json()
+    response = requests.get(url, headers=headers, params={'q': query})
+    
+    if response.status_code != 200:
+        logger.error(f"Failed to fetch data: {response.status_code} - {response.text}")
+        return []
+    
+    response_json = response.json()
+    # format the response in the logger
+    logger.debug(f"Response: {json.dumps(response_json, indent=4)}")
+    
+    return response_json
+
+
+def get_opportunity_products(access_token, user_id, account_id, product_ids = []):   
+    product_filter = ""
+    if product_ids:
+        product_filter = f" AND Product2Id IN ({','.join(product_ids)})"
+    
+    new_query = f"""
+    SELECT OpportunityId, Product2Id, Product2.Name, Quantity
+    FROM OpportunityLineItem
+    WHERE Opportunity.OwnerId = '{user_id}' AND Opportunity.AccountId = '{account_id}'{product_filter}
+    ORDER BY Opportunity.CreatedDate DESC
+    """
+    opportunity_products = _perform_query(access_token, new_query)
+    
+    return opportunity_products
+
+
+def get_opportunities_assigned_to_user(access_token, user_id, account_id, product_ids = []):
+    opportunity_query = f"SELECT Id, Name, StageName, AccountId, Account.Name, CreatedDate FROM Opportunity WHERE OwnerId = '{user_id}' AND AccountId = '{account_id}' ORDER BY CreatedDate DESC"
+       
+    opportunities = _perform_query(access_token, opportunity_query)
+    
+    opportunity_products = []
+    opportunity_products = get_opportunity_products(access_token, user_id, account_id, product_ids)
+        
+    # for opportunity in opportunities:
+    #    opportunity_products = [product for product in opportunity_products if product['OpportunityId'] == opportunity['Id']]
+    #    opportunity['has_products'] = len(opportunity_products) > 0
+    #    opportunity['products'] = opportunity_products
+            
+    return opportunities

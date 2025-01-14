@@ -7,6 +7,10 @@ from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +18,6 @@ logger = logging.getLogger(__name__)
 class Providers(str, Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
-
 
 class Speeds(str, Enum):
     SLOW = "slow"
@@ -40,17 +43,12 @@ PROVIDER_SPEEDS = {
         Speeds.SLOW: "o1",
         Speeds.MEDIUM: "gpt-4o",
         Speeds.FAST: "o1-mini",
-    },
-    Providers.GEMINI: {
-        Speeds.SLOW: "gemini-1.5-pro",
-        Speeds.MEDIUM: "gemini-1.5-flash",
-        Speeds.FAST: "gemini-1.5-flash-8b",
-    },
+    }
 }
 
 
 class LangChainService:
-    def __init__(self, provider: Providers = Providers.ANTHROPIC):
+    def __init__(self, provider: Providers = Providers.OPENAI):
         self.provider = provider
         self.model: str | None = None
 
@@ -58,7 +56,7 @@ class LangChainService:
         """Set the model to be used for chat completion."""
         self.model = model
 
-    async def chat(
+    def chat(
         self,
         messages: List[Dict[str, str]],
         system_message: str,
@@ -87,7 +85,7 @@ class LangChainService:
         is_o1_mini = self.model == "o1-mini"
         model_instance = PROVIDER_INSTANCES[self.provider](
             model=self.model,
-            temperature=0.0 if is_o1_mini else 0.4,
+            # temperature=0.0 if is_o1_mini else 0.4,
         )
 
         start_time = time.time()
@@ -108,7 +106,7 @@ class LangChainService:
                 ],
             ]
 
-        invocation = await model_instance.ainvoke(message_list)
+        invocation = model_instance.invoke(message_list)
 
         execution_time = time.time() - start_time
         logger.debug(f"Execution took {execution_time:.2f} seconds")
@@ -134,3 +132,6 @@ class LangChainService:
 
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
+
+
+service = LangChainService()

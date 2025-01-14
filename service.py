@@ -63,8 +63,7 @@ def get_user_products(user_id):
         
         # Get the list of products for the user
         for row in csv_reader:
-            logger.debug(f"Row: {row}")
             if row['UserId'] == user_id:
-                products.append(row['ProductId'])
+                products.append(row)
     
     return products

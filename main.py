@@ -33,7 +33,7 @@ def lambda_handler(event: dict, context: dict = None) -> dict:
     
     opportunity_scores = []
     for opportunity in opportunities:
-        ranked_opportunity = ai_service.rank_opportunity(opportunity, user_products)
+        ranked_opportunity = ai_service.rank_opportunity(opportunity, user_products, transcript)
         opportunity_scores.append(ranked_opportunity)
 
     dummy_response = {

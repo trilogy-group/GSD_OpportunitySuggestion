@@ -8,8 +8,8 @@ from langchain_service import Speeds, service as langchain_svc
 logger = logging.getLogger(__name__)
 
 
-def rank_opportunity(opportunity: dict, user_products: list) -> dict:
-    context = "You are a senior software engineer. Given the following opportunity, rank it based on the products that are being discussed."
+def rank_opportunity(opportunity: dict, user_products: list, transcript: str) -> dict:
+    context = "You are a senior software engineer. Given the following opportunity, rank it based on the products that are being discussed here: {transcript}."
     prompt = f"""
         These are the products that the sales representative is selling:
         {user_products}

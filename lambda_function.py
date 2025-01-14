@@ -6,26 +6,14 @@ import salesforce_service
 
 
 def lambda_handler(event, context) -> dict:
-    body = event.get('body')
+    body = json.loads(event['body'])
+    data = body['data']
     
-    if not isinstance(body, str):
-        return {
-            "result": None,
-            "error": "Invalid request body",
-            "metadata": {
-                "status": "error",
-                "errors": ["Invalid request body"],
-                "logs": []
-            }
-        }
-    
-    body = json.loads(body)
-    
-    transcript = body.get('transcript')
-    user_ids = body.get('user_ids')
-    account_id = body.get('account_id')
-    salesforce_access_token = body.get('salesforce_access_token')
-    
+    transcript = data.get('transcript')
+    user_ids = data.get('user_ids')
+    account_id = data.get('account_id')
+    salesforce_access_token = data.get('salesforce_access_token')
+
     if not transcript or not user_ids or not account_id:
         return {
             'error': 'Missing required parameters: transcript, user_id and account_id are required'

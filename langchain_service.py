@@ -3,7 +3,6 @@ import time
 import os
 from typing import List, Dict, Union, Type
 import logging
-from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 
@@ -16,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class Providers(str, Enum):
-    ANTHROPIC = "anthropic"
     OPENAI = "openai"
 
 class Speeds(str, Enum):
@@ -27,18 +25,12 @@ class Speeds(str, Enum):
 
 
 # Define provider instances mapping
-PROVIDER_INSTANCES: Dict[Providers, Union[Type[ChatAnthropic], Type[ChatOpenAI]]] = {
-    Providers.ANTHROPIC: ChatAnthropic,
+PROVIDER_INSTANCES: Dict[Providers, Type[ChatOpenAI]] = {
     Providers.OPENAI: ChatOpenAI,
 }
 
 # Define speed mappings for each provider
 PROVIDER_SPEEDS = {
-    Providers.ANTHROPIC: {
-        Speeds.SLOW: "claude-3-opus-20240229",
-        Speeds.MEDIUM: "claude-3-5-sonnet-20241022",
-        Speeds.FAST: "claude-3-5-haiku-20241022",
-    },
     Providers.OPENAI: {
         Speeds.SLOW: "o1",
         Speeds.MEDIUM: "gpt-4o",
@@ -48,8 +40,8 @@ PROVIDER_SPEEDS = {
 
 
 class LangChainService:
-    def __init__(self, provider: Providers = Providers.OPENAI):
-        self.provider = provider
+    def __init__(self):
+        self.provider = Providers.OPENAI
         self.model: str | None = None
 
     def set_model(self, model: str) -> None:

@@ -1,4 +1,3 @@
-import json
 import requests
 import logging
 from urllib.parse import urljoin
@@ -123,21 +122,25 @@ def _perform_query(access_token, query):
         return []
     
     response_json = response.json()
-    # format the response in the logger
-    logger.debug(f"Response: {json.dumps(response_json, indent=4)}")
     
     return response_json
 
 
-def get_opportunity_products(access_token, user_id, account_id, product_ids = []):   
+def get_opportunity_products(access_token, user_ids, account_id, product_ids = []):   
     product_filter = ""
     if product_ids:
-        product_filter = f" AND Product2Id IN ({','.join(product_ids)})"
+        quoted_ids = [f"'{id}'" for id in product_ids]
+        product_filter = f" AND Product2Id IN ({','.join(quoted_ids)})"
+        
+    users_filter = ""
+    if user_ids:
+        quoted_ids = [f"'{id}'" for id in user_ids]
+        users_filter = f" AND Opportunity.OwnerId IN ({','.join(quoted_ids)}) "
     
     new_query = f"""
     SELECT OpportunityId, Product2Id, Product2.Name, Quantity
     FROM OpportunityLineItem
-    WHERE Opportunity.OwnerId = '{user_id}' AND Opportunity.AccountId = '{account_id}'{product_filter}
+    WHERE Opportunity.AccountId = '{account_id}'{users_filter}{product_filter}
     ORDER BY Opportunity.CreatedDate DESC
     """
     opportunity_products = _perform_query(access_token, new_query)
@@ -145,13 +148,19 @@ def get_opportunity_products(access_token, user_id, account_id, product_ids = []
     return opportunity_products
 
 
-def get_opportunities_assigned_to_user(access_token, user_id, account_id, product_ids = []):
-    opportunity_query = f"SELECT Id, Name, StageName, AccountId, Account.Name, CreatedDate FROM Opportunity WHERE OwnerId = '{user_id}' AND AccountId = '{account_id}' ORDER BY CreatedDate DESC"
+def get_opportunities_assigned_to_users(access_token, user_ids, account_id, product_ids = []):
+    users_filter = ""
+    if user_ids:
+        # Add single quotes around each ID and join them with commas
+        quoted_ids = [f"'{id}'" for id in user_ids]
+        users_filter = f" AND OwnerId IN ({','.join(quoted_ids)})"
+    
+    opportunity_query = f"SELECT Id, Name, StageName, AccountId, Account.Name, CreatedDate FROM Opportunity WHERE AccountId = '{account_id}'{users_filter} ORDER BY CreatedDate DESC"
        
     opportunities = _perform_query(access_token, opportunity_query)
     
-    opportunity_products = []
-    opportunity_products = get_opportunity_products(access_token, user_id, account_id, product_ids)
+    # opportunity_products = []
+    # opportunity_products = get_opportunity_products(access_token, user_ids, account_id, product_ids)
         
     # for opportunity in opportunities:
     #    opportunity_products = [product for product in opportunity_products if product['OpportunityId'] == opportunity['Id']]

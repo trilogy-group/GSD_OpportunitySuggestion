@@ -46,7 +46,7 @@ def get_user(email):
         return None
 
 
-def get_user_products(user_id):
+def get_user_products(user_ids):
     csv_path = os.path.join(os.path.dirname(__file__), 'data', 'users_products.csv')
     
     if not os.path.exists(csv_path):
@@ -63,7 +63,7 @@ def get_user_products(user_id):
         
         # Get the list of products for the user
         for row in csv_reader:
-            if row['UserId'] == user_id:
+            if row['UserId'] in user_ids:
                 products.append(row)
     
     return products

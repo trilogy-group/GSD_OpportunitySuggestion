@@ -59,8 +59,7 @@ def suggestion():
         opportunities.append(opportunity_to_be_added)
     
     return jsonify({
-        'opportunities': opportunities,
-        'opportunity_products': opportunity_products
+        'opportunities': opportunities
     })
     
 

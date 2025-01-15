@@ -4,7 +4,6 @@ import logging
 import ai_service
 import lambda_function
 import salesforce_service
-import service
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -27,10 +26,7 @@ def suggestion():
     product_ids = request_data.get('product_ids')
     transcript = request_data.get('transcript')
     salesforce_access_token = request_data.get('salesforce_access_token')
-    max_results = request_data.get('max_results') or 10
-    
-    user_products = service.get_products_from_csv(product_ids)
-    
+        
     # Get opportunity products
     raw_opportunity_products = salesforce_service.get_opportunity_products(salesforce_access_token, user_ids, account_id, product_ids, format = True)
     opportunity_products = []

@@ -14,14 +14,11 @@ def lambda_handler(event, context) -> dict:
     account_id = data.get('account_id')
     product_ids = data.get('product_ids')
     salesforce_access_token = data.get('salesforce_access_token')
-    max_results = data.get('max_results') or 10
 
     if not transcript or not user_ids or not account_id or not product_ids:
         return {
             'error': 'Missing required parameters: transcript, user_id, account_id and product_ids are required'
         }
-
-    user_products = service.get_products_from_csv(product_ids)
 
     # Get opportunity products
     raw_opportunity_products = salesforce_service.get_opportunity_products(salesforce_access_token, user_ids, account_id, product_ids, format = True)
@@ -50,11 +47,6 @@ def lambda_handler(event, context) -> dict:
     
     for opportunity in raw_opportunities:
         opp_products = opportunity_products_map.get(opportunity.get('Id'), [])
-        
-        # Add debug logging
-        logger.debug(f"Processing opportunity: {opportunity}")
-        logger.debug(f"Found {len(opp_products)} products for opportunity")
-        
         opportunity_rank = ai_service.rank_opportunity_score(
             opportunity,
             opp_products,
@@ -64,8 +56,7 @@ def lambda_handler(event, context) -> dict:
             'id': opportunity.get('Id'),
             'name': opportunity.get('Name'),
             'stage_name': opportunity.get('StageName'),
-            'rank': opportunity_rank,
-            'product_count': len(opp_products)  # Add this for debugging
+            'rank': opportunity_rank
         }
         opportunities.append(opportunity_to_be_added)
 

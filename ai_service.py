@@ -15,7 +15,7 @@ def calculate_product_match(opportunity_products: List[Dict], transcript: str) -
     total_products = len(opportunity_products)
     
     # Add logging to debug product matching
-    logger.debug(f"Checking products in transcript: {transcript}")
+    # logger.debug(f"Checking products in transcript: {transcript}")
     
     for product in opportunity_products:
         product_name = product.get('product_name', '').lower()
@@ -78,30 +78,25 @@ def calculate_name_match(opportunity_name: str, transcript: str) -> float:
 def rank_opportunity_score(opportunity: Dict, opportunity_products: List[Dict], transcript: str) -> float:
     """
     Calculate opportunity score based on multiple factors:
-    - Product match (50%)
-    - Stage weight (30%)
-    - Name match (20%)
+    - Product match (60%)
+    - Stage weight (40%)
     """
     # Add debug logging
-    logger.debug(f"Ranking opportunity: {opportunity.get('name', 'Unknown')}")
-    logger.debug(f"Stage name: {opportunity.get('StageName', 'Unknown')}")  # Changed from stage_name to StageName
+    logger.debug(f"Stage name: {opportunity.get('StageName', 'Unknown')}")
     logger.debug(f"Products count: {len(opportunity_products)}")
     
     # Calculate individual components
     product_match = calculate_product_match(opportunity_products, transcript)
-    stage_weight = get_stage_weight(opportunity.get('StageName', ''))  # Changed from stage_name to StageName
-    name_match = calculate_name_match(opportunity.get('Name', ''), transcript)  # Changed from name to Name
+    stage_weight = get_stage_weight(opportunity.get('StageName', ''))
     
     # Log individual scores
     logger.debug(f"Product match: {product_match}")
     logger.debug(f"Stage weight: {stage_weight}")
-    logger.debug(f"Name match: {name_match}")
     
     # Calculate final score with weights
     final_score = (
-        (0.5 * product_match) +
-        (0.3 * stage_weight) +
-        (0.2 * name_match)
+        (0.6 * product_match) +
+        (0.4 * stage_weight)
     )
     
     # Log final score

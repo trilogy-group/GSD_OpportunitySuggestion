@@ -47,7 +47,7 @@ def lambda_handler(event, context) -> dict:
         })
 
     # Get opportunities assigned to users
-    raw_opportunities = salesforce_svc.get_opportunities_assigned_to_users(salesforce_access_token, user_ids, account_id, format = True)
+    raw_opportunities = salesforce_svc.get_opportunities_by_account_id(salesforce_access_token, account_id, format = True)
     opportunities = []
     
     # Get opportunity products for each opportunity
@@ -63,12 +63,14 @@ def lambda_handler(event, context) -> dict:
         opportunity_rank = ai_service.rank_opportunity_score(
             opportunity,
             opp_products,
-            transcript
+            transcript,
+            user_ids
         )
         opportunity_to_be_added = {
             'id': opportunity.get('Id'),
             'name': opportunity.get('Name'),
             'stage_name': opportunity.get('StageName'),
+            'owner_id': opportunity.get('OwnerId'),
             'rank': opportunity_rank
         }
         opportunities.append(opportunity_to_be_added)

@@ -57,12 +57,14 @@ def suggestion():
         opportunity_rank = ai_service.rank_opportunity_score(
             opportunity,
             opp_products,
-            transcript
+            transcript,
+            user_ids
         )
         opportunity_to_be_added = {
             'id': opportunity.get('Id'),
             'name': opportunity.get('Name'),
             'stage_name': opportunity.get('StageName'),
+            'owner_id': opportunity.get('OwnerId'),
             'rank': opportunity_rank
         }
         opportunities.append(opportunity_to_be_added)
@@ -74,7 +76,6 @@ def suggestion():
         'opportunities': opportunities
     })
     
-
 
 @app.route('/opportunities', methods=['POST'])
 def get_opportunities_by_user_ids():

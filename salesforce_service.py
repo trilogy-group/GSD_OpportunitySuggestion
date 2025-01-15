@@ -67,6 +67,17 @@ class SalesforceService:
         opportunity_products = self._perform_query(access_token, new_query, format)
         
         return opportunity_products
+    
+    
+    def get_opportunities_by_account_id(self, access_token, account_id, format = False):
+        opportunity_query = f"""
+        SELECT Id, OwnerId, Name, StageName, AccountId, Account.Name, CreatedDate
+        FROM Opportunity
+        WHERE AccountId = '{account_id}'
+        ORDER BY CreatedDate DESC
+        """
+        opportunities = self._perform_query(access_token, opportunity_query, format)
+        return opportunities
 
 
     def get_opportunities_assigned_to_users(self, access_token, user_ids, account_id, product_ids = [], format = False):
@@ -76,7 +87,12 @@ class SalesforceService:
             quoted_ids = [f"'{id}'" for id in user_ids]
             users_filter = f" AND OwnerId IN ({','.join(quoted_ids)})"
         
-        opportunity_query = f"SELECT Id, Name, StageName, AccountId, Account.Name, CreatedDate FROM Opportunity WHERE AccountId = '{account_id}'{users_filter} ORDER BY CreatedDate DESC"
+        opportunity_query = f"""
+        SELECT Id, Name, StageName, AccountId, Account.Name, CreatedDate
+        FROM Opportunity
+        WHERE AccountId = '{account_id}'{users_filter}
+        ORDER BY CreatedDate DESC
+        """
         
         opportunities = self._perform_query(access_token, opportunity_query, format)
                 

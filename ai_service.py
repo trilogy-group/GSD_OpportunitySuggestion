@@ -75,28 +75,40 @@ def calculate_name_match(opportunity_name: str, transcript: str) -> float:
     matching_words = opportunity_words.intersection(transcript_words)
     return len(matching_words) / len(opportunity_words)
 
-def rank_opportunity_score(opportunity: Dict, opportunity_products: List[Dict], transcript: str) -> float:
+def calculate_owner_match(opportunity_owner_id: str, user_ids: List[str]) -> float:
+    """Calculate if the opportunity owner is in the list of user IDs"""
+    if not opportunity_owner_id or not user_ids:
+        return 0.0
+    
+    return 1.0 if opportunity_owner_id in user_ids else 0.0
+
+def rank_opportunity_score(opportunity: Dict, opportunity_products: List[Dict], transcript: str, user_ids: List[str]) -> float:
     """
     Calculate opportunity score based on multiple factors:
-    - Product match (60%)
+    - Product match (50%)
     - Stage weight (40%)
+    - Owner match (10%)
     """
     # Add debug logging
     logger.debug(f"Stage name: {opportunity.get('StageName', 'Unknown')}")
     logger.debug(f"Products count: {len(opportunity_products)}")
+    logger.debug(f"Owner ID: {opportunity.get('OwnerId', 'Unknown')}")
     
     # Calculate individual components
     product_match = calculate_product_match(opportunity_products, transcript)
     stage_weight = get_stage_weight(opportunity.get('StageName', ''))
+    owner_match = calculate_owner_match(opportunity.get('OwnerId'), user_ids)
     
     # Log individual scores
     logger.debug(f"Product match: {product_match}")
     logger.debug(f"Stage weight: {stage_weight}")
+    logger.debug(f"Owner match: {owner_match}")
     
     # Calculate final score with weights
     final_score = (
-        (0.6 * product_match) +
-        (0.4 * stage_weight)
+        (0.5 * product_match) +
+        (0.4 * stage_weight) +
+        (0.1 * owner_match)
     )
     
     # Log final score

@@ -1,13 +1,21 @@
 import json
 
 import ai_service
-import service
 import salesforce_service
 
 
 def lambda_handler(event, context) -> dict:
     body = json.loads(event['body'])
-    data = body['data']
+    data = body.get('data')
+    if not data:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({
+                'error': 'Missing required parameters: data is required'
+            })
+        }
+    
+    config = body.get('config', {})
 
     transcript = data.get('transcript')
     user_ids = data.get('user_ids')
@@ -22,9 +30,11 @@ def lambda_handler(event, context) -> dict:
                 'error': 'Missing required parameters: transcript, user_id, account_id and product_ids are required'
             })
         }
+        
+    salesforce_svc = salesforce_service.SalesforceService(config)
 
     # Get opportunity products
-    raw_opportunity_products = salesforce_service.get_opportunity_products(salesforce_access_token, user_ids, account_id, product_ids, format = True)
+    raw_opportunity_products = salesforce_svc.get_opportunity_products(salesforce_access_token, user_ids, account_id, product_ids, format = True)
     opportunity_products = []
 
     for opportunity_product in raw_opportunity_products:
@@ -37,7 +47,7 @@ def lambda_handler(event, context) -> dict:
         })
 
     # Get opportunities assigned to users
-    raw_opportunities = salesforce_service.get_opportunities_assigned_to_users(salesforce_access_token, user_ids, account_id, format = True)
+    raw_opportunities = salesforce_svc.get_opportunities_assigned_to_users(salesforce_access_token, user_ids, account_id, format = True)
     opportunities = []
     
     # Get opportunity products for each opportunity

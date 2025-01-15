@@ -14,15 +14,20 @@ def calculate_product_match(opportunity_products: List[Dict], transcript: str) -
     mentioned_products = 0
     total_products = len(opportunity_products)
     
-    # Add logging to debug product matching
-    # logger.debug(f"Checking products in transcript: {transcript}")
+    # Convert transcript to lowercase once
+    transcript_lower = transcript.lower()
     
     for product in opportunity_products:
         product_name = product.get('product_name', '').lower()
-        logger.debug(f"Checking product: {product_name}")
-        if product_name and product_name in transcript.lower():
-            mentioned_products += 1
-            logger.debug(f"Found product mention: {product_name}")
+        if not product_name:
+            continue
+            
+        # Split product name into words and check if any word is in transcript
+        product_words = product_name.split()
+        for word in product_words:
+            if len(word) > 3 and word in transcript_lower:  # Only check words longer than 3 chars
+                mentioned_products += 1
+                break  # Count the product as mentioned if any of its words are found
     
     match_score = mentioned_products / total_products if total_products > 0 else 0.0
     logger.debug(f"Product match score: {match_score} ({mentioned_products}/{total_products})")
@@ -43,7 +48,7 @@ def get_stage_weight(stage_name: str) -> float:
         'business': 0.65,
         'connect': 0.65,
         'engage': 0.65,
-        'pending': 0.6,
+        'pending': 0.7,  # Increased from 0.6 to 0.7
         
         # Medium probability stages (0.5 - 0.4)
         'activation': 0.5,
@@ -58,11 +63,11 @@ def get_stage_weight(stage_name: str) -> float:
         # Low probability stages (0.1 - 0.0)
         'resolution fail/futile': 0.1,
         "won't process": 0.05,
-        'closed won': 0.1,  # Low weight because already closed
+        'closed won': 0.1,
         'closed lost': 0.0,
         'none': 0.0
     }
-    return stage_weights.get(stage_name.lower(), 0.5)  # Default 0.5 for unknown stages
+    return stage_weights.get(stage_name.lower(), 0.5)
 
 def calculate_name_match(opportunity_name: str, transcript: str) -> float:
     """Simple name matching - can be enhanced with more sophisticated NLP"""
@@ -153,3 +158,36 @@ def rank_opportunity(opportunity: dict, user_products: list, transcript: str) ->
     logger.debug(f"JSON Ranked opportunity: {json_ranked_opportunity}")
     
     return json_ranked_opportunity
+
+def determine_suggestion(opportunities: List[Dict], min_score_threshold: float = 0.25, score_difference_threshold: float = 0.1) -> List[Dict]:
+    """
+    Determine which opportunity should be suggested based on dynamic thresholds.
+    
+    Args:
+        opportunities: List of ranked opportunities
+        min_score_threshold: Minimum score required to be considered (default 0.25)
+        score_difference_threshold: Required difference from next best score (default 0.1)
+    
+    Returns:
+        List of opportunities with suggested flag
+    """
+    if not opportunities:
+        return opportunities
+        
+    # Sort opportunities by rank in descending order
+    sorted_opps = sorted(opportunities, key=lambda x: x['rank'], reverse=True)
+    
+    # Get top two scores
+    top_score = sorted_opps[0]['rank']
+    second_score = sorted_opps[1]['rank'] if len(sorted_opps) > 1 else 0
+    
+    # Check if top score meets minimum threshold and has enough separation from second best
+    score_difference = top_score - second_score
+    should_suggest = (top_score >= min_score_threshold and 
+                     score_difference >= score_difference_threshold)
+    
+    # Add suggested flag to all opportunities
+    for opp in sorted_opps:
+        opp['suggested'] = should_suggest and opp['rank'] == top_score
+        
+    return sorted_opps

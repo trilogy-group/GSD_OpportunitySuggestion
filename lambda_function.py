@@ -77,12 +77,22 @@ def lambda_handler(event, context) -> dict:
 
     # Sort opportunities by rank in descending order
     opportunities.sort(key=lambda x: x['rank'], reverse=True)
+    
+    # Apply suggestion logic
+    opportunities = ai_service.determine_suggestion(
+        opportunities,
+        min_score_threshold=0.25,  # Lowered from 0.3
+        score_difference_threshold=0.1  # Lowered from 0.15
+    )
 
     return {
         'statusCode': 200,
         'body': json.dumps({
             'result': opportunities,
             'error': None,
-            'metadata': {}
+            'metadata': {
+                'min_score_threshold': 0.25,
+                'score_difference_threshold': 0.1
+            }
         })
     }

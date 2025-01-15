@@ -17,7 +17,10 @@ def lambda_handler(event, context) -> dict:
 
     if not transcript or not user_ids or not account_id or not product_ids:
         return {
-            'error': 'Missing required parameters: transcript, user_id, account_id and product_ids are required'
+            'statusCode': 400,
+            'body': json.dumps({
+                'error': 'Missing required parameters: transcript, user_id, account_id and product_ids are required'
+            })
         }
 
     # Get opportunity products
@@ -63,10 +66,11 @@ def lambda_handler(event, context) -> dict:
     # Sort opportunities by rank in descending order
     opportunities.sort(key=lambda x: x['rank'], reverse=True)
 
-    dummy_response = {
-        'result': opportunities,
-        'error': None,
-        'metadata': {}
+    return {
+        'statusCode': 200,
+        'body': json.dumps({
+            'result': opportunities,
+            'error': None,
+            'metadata': {}
+        })
     }
-
-    return dummy_response, 200

@@ -90,9 +90,13 @@ def calculate_owner_match(opportunity_owner_id: str, user_ids: List[str]) -> flo
 def rank_opportunity_score(opportunity: Dict, opportunity_products: List[Dict], transcript: str, user_ids: List[str]) -> float:
     """
     Calculate opportunity score based on multiple factors:
-    - Product match (50%)
-    - Stage weight (40%)
-    - Owner match (10%)
+    If product_ids are provided:
+        - Product match (50%)
+        - Stage weight (40%)
+        - Owner match (10%)
+    If no product_ids:
+        - Stage weight (80%)
+        - Owner match (20%)
     """
     # Add debug logging
     logger.debug(f"Stage name: {opportunity.get('StageName', 'Unknown')}")
@@ -100,21 +104,29 @@ def rank_opportunity_score(opportunity: Dict, opportunity_products: List[Dict], 
     logger.debug(f"Owner ID: {opportunity.get('OwnerId', 'Unknown')}")
     
     # Calculate individual components
-    product_match = calculate_product_match(opportunity_products, transcript)
     stage_weight = get_stage_weight(opportunity.get('StageName', ''))
     owner_match = calculate_owner_match(opportunity.get('OwnerId'), user_ids)
     
     # Log individual scores
-    logger.debug(f"Product match: {product_match}")
     logger.debug(f"Stage weight: {stage_weight}")
     logger.debug(f"Owner match: {owner_match}")
     
-    # Calculate final score with weights
-    final_score = (
-        (0.5 * product_match) +
-        (0.4 * stage_weight) +
-        (0.1 * owner_match)
-    )
+    if opportunity_products:  # If we have products to match
+        product_match = calculate_product_match(opportunity_products, transcript)
+        logger.debug(f"Product match: {product_match}")
+        
+        # Calculate final score with all weights
+        final_score = (
+            (0.5 * product_match) +
+            (0.4 * stage_weight) +
+            (0.1 * owner_match)
+        )
+    else:  # If no products to match, redistribute weights
+        logger.debug("No products to match, using stage and owner weights only")
+        final_score = (
+            (0.8 * stage_weight) +
+            (0.2 * owner_match)
+        )
     
     # Log final score
     logger.debug(f"Final score before normalization: {final_score}")

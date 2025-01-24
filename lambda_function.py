@@ -6,6 +6,9 @@ import salesforce_service
 
 def lambda_handler(event, context) -> dict:
     body = json.loads(event['body'])
+
+    print(body)
+
     data = body.get('data')
     if not data:
         return {
@@ -23,11 +26,11 @@ def lambda_handler(event, context) -> dict:
     product_ids = data.get('product_ids')
     salesforce_access_token = data.get('salesforce_access_token')
 
-    if not transcript or not user_ids or not account_id or not product_ids:
+    if not transcript or not user_ids or not account_id:
         return {
             'statusCode': 400,
             'body': json.dumps({
-                'error': 'Missing required parameters: transcript, user_id, account_id and product_ids are required'
+                'error': 'Missing required parameters: transcript, user_id, account_id are required'
             })
         }
         
@@ -84,8 +87,8 @@ def lambda_handler(event, context) -> dict:
         min_score_threshold=0.25,  # Lowered from 0.3
         score_difference_threshold=0.1  # Lowered from 0.15
     )
-
-    return {
+    
+    response = {
         'statusCode': 200,
         'body': json.dumps({
             'result': opportunities,
@@ -96,3 +99,7 @@ def lambda_handler(event, context) -> dict:
             }
         })
     }
+    
+    print(response)
+
+    return response

@@ -40,14 +40,15 @@ def lambda_handler(event, context) -> dict:
     raw_opportunity_products = salesforce_svc.get_opportunity_products(salesforce_access_token, user_ids, account_id, product_ids, format = True)
     opportunity_products = []
 
-    for opportunity_product in raw_opportunity_products:
-        opportunity_products.append({
-            'id': opportunity_product.get('Id'),
-            'opportunity_id': opportunity_product.get('OpportunityId'),
-            'product_id': opportunity_product.get('Product2Id'),
-            'product_name': opportunity_product.get('Product2').get('Name'),
-            'quantity': opportunity_product.get('Quantity')
-        })
+    if raw_opportunity_products:  # Only process products if we got them successfully
+        for opportunity_product in raw_opportunity_products:
+            opportunity_products.append({
+                'id': opportunity_product.get('Id'),
+                'opportunity_id': opportunity_product.get('OpportunityId'),
+                'product_id': opportunity_product.get('Product2Id'),
+                'product_name': opportunity_product.get('Product2').get('Name'),
+                'quantity': opportunity_product.get('Quantity')
+            })
 
     # Get opportunities assigned to users
     raw_opportunities = salesforce_svc.get_opportunities_by_account_id(salesforce_access_token, account_id, format = True)
@@ -62,10 +63,11 @@ def lambda_handler(event, context) -> dict:
         opportunity_products_map[opp_id].append(op)
     
     for opportunity in raw_opportunities:
+        # Pass empty list if no products were found for this opportunity
         opp_products = opportunity_products_map.get(opportunity.get('Id'), [])
         opportunity_rank = ai_service.rank_opportunity_score(
             opportunity,
-            opp_products,
+            opp_products,  # This will be empty if products request failed
             transcript,
             user_ids
         )
@@ -81,12 +83,16 @@ def lambda_handler(event, context) -> dict:
     # Sort opportunities by rank in descending order
     opportunities.sort(key=lambda x: x['rank'], reverse=True)
     
-    # Apply suggestion logic
-    opportunities = ai_service.determine_suggestion(
-        opportunities,
-        min_score_threshold=0.25,  # Lowered from 0.3
-        score_difference_threshold=0.1  # Lowered from 0.15
-    )
+    # Filter out opportunities with score lower than 0.5
+    opportunities = [opp for opp in opportunities if opp['rank'] >= 0.5]
+    
+    # Only apply suggestion logic if we have opportunities left
+    if opportunities:
+        opportunities = ai_service.determine_suggestion(
+            opportunities,
+            min_score_threshold=0.25,
+            score_difference_threshold=0.1
+        )
     
     response = {
         'statusCode': 200,
@@ -94,7 +100,7 @@ def lambda_handler(event, context) -> dict:
             'result': opportunities,
             'error': None,
             'metadata': {
-                'min_score_threshold': 0.25,
+                'min_score_threshold': 0.5,  # Updated to reflect new minimum score
                 'score_difference_threshold': 0.1
             }
         })

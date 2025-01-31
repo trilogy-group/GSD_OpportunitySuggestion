@@ -1,10 +1,8 @@
-import logging
 import json
 from typing import List, Dict
 
 from langchain_service import Speeds, service as langchain_svc
 
-logger = logging.getLogger(__name__)
 
 def calculate_product_match(opportunity_products: List[Dict], transcript: str) -> float:
     """Calculate how many products from the opportunity are mentioned in the transcript"""
@@ -30,44 +28,45 @@ def calculate_product_match(opportunity_products: List[Dict], transcript: str) -
                 break  # Count the product as mentioned if any of its words are found
     
     match_score = mentioned_products / total_products if total_products > 0 else 0.0
-    logger.debug(f"Product match score: {match_score} ({mentioned_products}/{total_products})")
+    print(f"Product match score: {match_score} ({mentioned_products}/{total_products})")
     return match_score
 
 def get_stage_weight(stage_name: str) -> float:
     """Get weight based on opportunity stage"""
     stage_weights = {
         # High probability stages (1.0 - 0.8)
-        'engaged': 1.0,
-        'proposal': 0.9,
-        'quote follow-up': 0.85,
-        'finalizing': 0.8,
+        'Engaged': 1.0,
+        'Proposal': 0.9,
+        'Quote Follow-Up': 0.85,
+        'Finalizing': 0.8,
         
         # Medium-high probability stages (0.7 - 0.6)
-        'outreach': 0.7,
-        'introduction': 0.7,
-        'business': 0.65,
-        'connect': 0.65,
-        'engage': 0.65,
-        'pending': 0.7,  # Increased from 0.6 to 0.7
+        'Outreach': 0.7,
+        'User': 0.7,
+        'Business': 0.65,
+        'Introduction': 0.7,
+        'Connect': 0.65,
+        'Engage': 0.65,
+        'Pending': 0.7,  # Increased from 0.6 to 0.7
         
         # Medium probability stages (0.5 - 0.4)
-        'activation': 0.5,
-        'review': 0.5,
-        'identify resolution': 0.45,
-        'resolution attempt': 0.45,
+        'Activation': 0.5,
+        'Review': 0.5,
+        'Identify Resolution': 0.45,
+        'Resolution Attempt': 0.45,
         
         # Low-medium probability stages (0.3 - 0.2)
-        'resolution success': 0.3,
-        'co-term': 0.25,
+        'Resolution Success': 0.3,
+        'Co-Term': 0.25,
         
         # Low probability stages (0.1 - 0.0)
-        'resolution fail/futile': 0.1,
-        "won't process": 0.05,
-        'closed won': 0.1,
-        'closed lost': 0.0,
-        'none': 0.0
+        'Resolution Fail/Futile': 0.1,
+        "Won't Process": 0.05,
+        'Closed Won': 0.1,
+        'Closed Lost': 0.0,
+        'None': 0.0
     }
-    return stage_weights.get(stage_name.lower(), 0.5)
+    return stage_weights.get(stage_name.lower(), 0.2)
 
 def calculate_name_match(opportunity_name: str, transcript: str) -> float:
     """Simple name matching - can be enhanced with more sophisticated NLP"""
@@ -99,21 +98,21 @@ def rank_opportunity_score(opportunity: Dict, opportunity_products: List[Dict], 
         - Owner match (20%)
     """
     # Add debug logging
-    logger.debug(f"Stage name: {opportunity.get('StageName', 'Unknown')}")
-    logger.debug(f"Products count: {len(opportunity_products)}")
-    logger.debug(f"Owner ID: {opportunity.get('OwnerId', 'Unknown')}")
+    print(f"Stage name: {opportunity.get('StageName', 'Unknown')}")
+    print(f"Products count: {len(opportunity_products)}")
+    print(f"Owner ID: {opportunity.get('OwnerId', 'Unknown')}")
     
     # Calculate individual components
     stage_weight = get_stage_weight(opportunity.get('StageName', ''))
     owner_match = calculate_owner_match(opportunity.get('OwnerId'), user_ids)
     
     # Log individual scores
-    logger.debug(f"Stage weight: {stage_weight}")
-    logger.debug(f"Owner match: {owner_match}")
+    print(f"Stage weight: {stage_weight}")
+    print(f"Owner match: {owner_match}")
     
     if opportunity_products:  # If we have products to match
         product_match = calculate_product_match(opportunity_products, transcript)
-        logger.debug(f"Product match: {product_match}")
+        print(f"Product match: {product_match}")
         
         # Calculate final score with all weights
         final_score = (
@@ -122,18 +121,18 @@ def rank_opportunity_score(opportunity: Dict, opportunity_products: List[Dict], 
             (0.1 * owner_match)
         )
     else:  # If no products to match, redistribute weights
-        logger.debug("No products to match, using stage and owner weights only")
+        print("No products to match, using stage and owner weights only")
         final_score = (
             (0.8 * stage_weight) +
             (0.2 * owner_match)
         )
     
     # Log final score
-    logger.debug(f"Final score before normalization: {final_score}")
+    print(f"Final score before normalization: {final_score}")
     
     # Normalize to ensure we don't exceed 1.0
     normalized_score = min(max(final_score, 0.0), 1.0)
-    logger.debug(f"Final normalized score: {normalized_score}")
+    print(f"Final normalized score: {normalized_score}")
     
     return normalized_score
 
@@ -164,10 +163,10 @@ def rank_opportunity(opportunity: dict, user_products: list, transcript: str) ->
             Speeds.FAST
         )
     
-    logger.debug(f"Ranked opportunity: {ranked_opportunities}")
+    print(f"Ranked opportunity: {ranked_opportunities}")
     
     json_ranked_opportunity = json.loads(ranked_opportunities)
-    logger.debug(f"JSON Ranked opportunity: {json_ranked_opportunity}")
+    print(f"JSON Ranked opportunity: {json_ranked_opportunity}")
     
     return json_ranked_opportunity
 

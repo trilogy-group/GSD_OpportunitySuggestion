@@ -1,7 +1,9 @@
 import json
 
-import ai_service
+import salesforce_rank
 import salesforce_service
+import pivotal_rank
+import pivotal_service
 
 
 def lambda_handler(event, context) -> dict:
@@ -24,7 +26,6 @@ def lambda_handler(event, context) -> dict:
     user_ids = data.get('user_ids')
     account_id = data.get('account_id')
     product_ids = data.get('product_ids')
-    salesforce_access_token = data.get('salesforce_access_token')
 
     if not transcript or not user_ids or not account_id:
         return {
@@ -33,11 +34,31 @@ def lambda_handler(event, context) -> dict:
                 'error': 'Missing required parameters: transcript, user_id, account_id are required'
             })
         }
-        
-    salesforce_svc = salesforce_service.SalesforceService(config)
+    
+    if not config.get('crm_platform') or not config.get('access_token'):
+        return {
+            'statusCode': 400,
+            'body': json.dumps({
+                'error': 'Missing required parameters: crm_platform, access_token are required'
+            })
+        }
+    
+    crm_platform = config.get('crm_platform')
+    
+    if crm_platform == 'salesforce':
+        crm_service = salesforce_service.SalesforceService(config)
+    elif crm_platform == 'pivotal':
+        crm_service = pivotal_service.PivotalService(config)
+    else:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({
+                'error': 'Invalid CRM platform'
+            })
+        }
 
     # Get opportunity products
-    raw_opportunity_products = salesforce_svc.get_opportunity_products(salesforce_access_token, user_ids, account_id, product_ids, format = True)
+    raw_opportunity_products = crm_service.get_opportunity_products(user_ids, account_id, product_ids, format = True)
     opportunity_products = []
 
     if raw_opportunity_products:  # Only process products if we got them successfully
@@ -51,7 +72,7 @@ def lambda_handler(event, context) -> dict:
             })
 
     # Get opportunities assigned to users
-    raw_opportunities = salesforce_svc.get_opportunities_by_account_id(salesforce_access_token, account_id, format = True)
+    raw_opportunities = crm_service.get_opportunities_by_account_id(account_id, format = True)
     opportunities = []
     
     # Get opportunity products for each opportunity
@@ -65,7 +86,7 @@ def lambda_handler(event, context) -> dict:
     for opportunity in raw_opportunities:
         # Pass empty list if no products were found for this opportunity
         opp_products = opportunity_products_map.get(opportunity.get('Id'), [])
-        opportunity_rank = ai_service.rank_opportunity_score(
+        opportunity_rank = salesforce_rank.rank_opportunity_score(
             opportunity,
             opp_products,  # This will be empty if products request failed
             transcript,
@@ -88,7 +109,7 @@ def lambda_handler(event, context) -> dict:
     
     # Only apply suggestion logic if we have opportunities left
     if opportunities:
-        opportunities = ai_service.determine_suggestion(
+        opportunities = salesforce_rank.determine_suggestion(
             opportunities,
             min_score_threshold=0.25,
             score_difference_threshold=0.1

@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import logging
 
-import ai_service
+import salesforce_rank
 import lambda_function
 import salesforce_service
 
@@ -54,7 +54,7 @@ def suggestion():
     
     for opportunity in raw_opportunities:
         opp_products = opportunity_products_map.get(opportunity.get('Id'), [])
-        opportunity_rank = ai_service.rank_opportunity_score(
+        opportunity_rank = salesforce_rank.rank_opportunity_score(
             opportunity,
             opp_products,
             transcript,
@@ -73,7 +73,7 @@ def suggestion():
     opportunities.sort(key=lambda x: x['rank'], reverse=True)
     
     # Apply suggestion logic
-    opportunities = ai_service.determine_suggestion(
+    opportunities = salesforce_rank.determine_suggestion(
         opportunities,
         min_score_threshold=0.25,  # Lowered from 0.3
         score_difference_threshold=0.1  # Lowered from 0.15

@@ -34,7 +34,15 @@ class ACRMRank:
 
     def get_stage_weight(self, stage_name: int) -> float:
         """Get weight based on opportunity stage"""
-        return None
+        stage_weights = {
+            "In Progress (BASE)": 1.0,
+            "Won (BASE)": 0.9,
+            "Verbal Agreement (BASE)": 0.7,
+            "Rests (BASE)": 0.4,
+            "Lost (BASE)": 0.1,
+            "Cancelled (BASE)": 0.1
+        }
+        return stage_weights.get(stage_name, 0.0)
 
     def calculate_owner_match(self, opportunity_owner_id: str, user_ids: List[str]) -> float:
         """Calculate if the opportunity owner is in the list of user IDs"""

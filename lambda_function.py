@@ -1,9 +1,8 @@
 import json
 
-import salesforce_rank
-import salesforce_service
-import pivotal_rank
-import pivotal_service
+
+import crm_services
+import rank_services
 
 
 def lambda_handler(event, context) -> dict:
@@ -46,9 +45,33 @@ def lambda_handler(event, context) -> dict:
     crm_platform = config.get('crm_platform')
     
     if crm_platform == 'salesforce':
-        crm_service = salesforce_service.SalesforceService(config)
+        crm_service = crm_services.SalesforceService(config)
+        rank_service = rank_services.SalesforceRank()
     elif crm_platform == 'pivotal':
-        crm_service = pivotal_service.PivotalService(config)
+        if not config.get('form_name') or not config.get('pivotal_environment_name'):
+
+            return {
+                'statusCode': 400,
+                'body': json.dumps({
+                    'error': 'Missing required parameters: form_name and pivotal_environment_name are required'
+                })
+            }
+
+        crm_service = crm_services.PivotalService(config)
+        rank_service = rank_services.PivotalRank()
+    elif crm_platform == 'acrm':
+        user_credentials = config.get('access_token', '').split(':')
+        if len(user_credentials) != 2:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({
+                    'error': 'Invalid access token format'
+                })
+            }
+        config['username'] = user_credentials[0]
+        config['password'] = user_credentials[1]
+        crm_service = crm_services.ACRMService(config)
+        rank_service = rank_services.ACRMRank()
     else:
         return {
             'statusCode': 400,
@@ -86,7 +109,7 @@ def lambda_handler(event, context) -> dict:
     for opportunity in raw_opportunities:
         # Pass empty list if no products were found for this opportunity
         opp_products = opportunity_products_map.get(opportunity.get('Id'), [])
-        opportunity_rank = salesforce_rank.rank_opportunity_score(
+        opportunity_rank = rank_service.rank_opportunity_score(
             opportunity,
             opp_products,  # This will be empty if products request failed
             transcript,
@@ -109,7 +132,7 @@ def lambda_handler(event, context) -> dict:
     
     # Only apply suggestion logic if we have opportunities left
     if opportunities:
-        opportunities = salesforce_rank.determine_suggestion(
+        opportunities = rank_service.determine_suggestion(
             opportunities,
             min_score_threshold=0.25,
             score_difference_threshold=0.1

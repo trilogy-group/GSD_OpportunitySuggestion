@@ -26,15 +26,17 @@ def lambda_handler(event, context) -> dict:
     account_id = data.get('account_id')
     product_ids = data.get('product_ids')
 
-    if not transcript or not user_ids or not account_id:
+    if not transcript or not account_id:
+        print('Missing required parameters: transcript, account_id are required')
         return {
             'statusCode': 400,
             'body': json.dumps({
-                'error': 'Missing required parameters: transcript, user_id, account_id are required'
+                'error': 'Missing required parameters: transcript, account_id are required'
             })
         }
     
     if not config.get('crm_platform') or not config.get('access_token'):
+        print('Missing required parameters: crm_platform, access_token are required')
         return {
             'statusCode': 400,
             'body': json.dumps({
@@ -49,7 +51,7 @@ def lambda_handler(event, context) -> dict:
         rank_service = rank_services.SalesforceRank()
     elif crm_platform == 'pivotal':
         if not config.get('form_name') or not config.get('pivotal_environment_name'):
-
+            print('Missing required parameters: form_name and pivotal_environment_name are required')
             return {
                 'statusCode': 400,
                 'body': json.dumps({
@@ -62,21 +64,24 @@ def lambda_handler(event, context) -> dict:
     elif crm_platform == 'acrm':
         user_credentials = config.get('access_token', '').split(':')
         if len(user_credentials) != 2:
+            print('Invalid access token format. Format should be username:password')
             return {
                 'statusCode': 400,
                 'body': json.dumps({
-                    'error': 'Invalid access token format'
+                    'error': 'Invalid access token format. Format should be username:password'
                 })
             }
+
         config['username'] = user_credentials[0]
         config['password'] = user_credentials[1]
         crm_service = crm_services.ACRMService(config)
         rank_service = rank_services.ACRMRank()
     else:
+        print('Invalid CRM platform. Valid platforms are salesforce, pivotal, acrm')
         return {
             'statusCode': 400,
             'body': json.dumps({
-                'error': 'Invalid CRM platform'
+                'error': 'Invalid CRM platform. Valid platforms are salesforce, pivotal, acrm'
             })
         }
 

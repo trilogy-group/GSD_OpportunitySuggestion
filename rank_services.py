@@ -318,7 +318,7 @@ class SalesforceRank:
         
         return json_ranked_opportunity
 
-    def determine_suggestion(opportunities: List[Dict], min_score_threshold: float = 0.25, score_difference_threshold: float = 0.1) -> List[Dict]:
+    def determine_suggestion(self, opportunities: List[Dict], min_score_threshold: float = 0.25, score_difference_threshold: float = 0.1) -> List[Dict]:
         """
         Determine which opportunity should be suggested based on dynamic thresholds.
         
@@ -349,4 +349,26 @@ class SalesforceRank:
         for opp in sorted_opps:
             opp['suggested'] = should_suggest and opp['rank'] == top_score
             
-        return sorted_opps    
+        return sorted_opps
+
+    def normalize_scores(self, opportunities: List[Dict]) -> List[Dict]:
+        """
+        Normalize scores so they sum up to 100%
+        For example:
+        Input scores:  [0.36, 0.12, 0.12]
+        Output scores: [0.67, 0.22, 0.11] (67%, 22%, 11%)
+        """
+        if not opportunities:
+            return opportunities
+            
+        # Get sum of all ranks
+        total_rank = sum(opp['rank'] for opp in opportunities)
+        
+        if total_rank == 0:
+            return opportunities
+        
+        # Convert each score to a percentage of the total
+        for opp in opportunities:
+            opp['rank'] = round(opp['rank'] / total_rank, 2)  # Round to 2 decimal places
+            
+        return opportunities

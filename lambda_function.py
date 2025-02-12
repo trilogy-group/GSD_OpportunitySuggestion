@@ -137,6 +137,9 @@ def lambda_handler(event, context) -> dict:
     
     # Only apply suggestion logic if we have opportunities left
     if opportunities:
+        # Normalize scores before determining suggestion
+        opportunities = rank_service.normalize_scores(opportunities)
+        
         opportunities = rank_service.determine_suggestion(
             opportunities,
             min_score_threshold=0.25,
@@ -149,7 +152,7 @@ def lambda_handler(event, context) -> dict:
             'result': opportunities,
             'error': None,
             'metadata': {
-                'min_score_threshold': 0.5,  # Updated to reflect new minimum score
+                'min_score_threshold': 0.5,
                 'score_difference_threshold': 0.1
             }
         })

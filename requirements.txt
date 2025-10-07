@@ -20,7 +20,7 @@ jsonpointer==3.0.0
 langchain==0.3.14
 langchain-core==0.3.29
 langchain-openai==0.3.0
-langchain-text-splitters==0.3.5
+langchain-text-splitters==1.0.0a1
 langsmith==0.2.10
 multidict==6.1.0
 numpy==2.2.1
